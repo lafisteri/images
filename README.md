@@ -60,7 +60,7 @@ Below is a minimal configuration example showing how to use this image with Sele
 
 ## 📊 Download Statistics
 
-### Chrome: [![Chrome Docker Pulls](https://img.shields.io/docker/pulls/selenoid/chrome.svg)](https://hub.docker.com/r/lafisteri/images)
+### Chrome: [![Chrome Docker Pulls](https://img.shields.io/docker/pulls/lafisteri/images.svg)](https://hub.docker.com/r/lafisteri/images)
 
 ---
 
