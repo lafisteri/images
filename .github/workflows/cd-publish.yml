@@ -1,4 +1,4 @@
-name: CD - Build & publish vnc_chrome image
+name: CD - Build & publish chrome image
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ on:
         type: string
 
 env:
-  DOCKERHUB_REPOSITORY: lafisteri/vnc_chrome
+  DOCKERHUB_REPOSITORY: lafisteri/images
 
 jobs:
   publish:
