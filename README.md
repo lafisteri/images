@@ -46,16 +46,21 @@ Below is a minimal configuration example showing how to use this image with Sele
 ```json
 {
   "chrome": {
-    "default": "124.0",
+    "default": "142.0",
     "versions": {
-      "124.0": {
-        "image": "reimages/chrome:124.0",
-        "port": "4444"
+      "142.0": {
+        "image": "lafisteri/images:142.0",
+        "port": "4444",
+        "path": "/"
       }
     }
   }
 }
 ```
+
+## 📊 Download Statistics
+
+### Chrome: [![Chrome Docker Pulls](https://img.shields.io/docker/pulls/selenoid/chrome.svg)](https://hub.docker.com/r/lafisteri/images)
 
 ---
 
