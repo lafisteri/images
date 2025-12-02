@@ -112,14 +112,4 @@ jobs:
           git add chrome-versions.json
           git commit -m "chore: mark Chrome $VERSION_KEY as published"
           git push
-
-      - name: Create git tag for this version
-        run: |
-          VERSION_KEY="${{ steps.vars.outputs.version_key }}"
-          IMAGE_TAG="${{ steps.vars.outputs.image_tag }}"
-          TAG_NAME="chrome-${IMAGE_TAG}"
-
-          git tag "$TAG_NAME"
-          git push origin "$TAG_NAME"
-
-          echo "Created git tag: $TAG_NAME"
+          
