@@ -49,7 +49,7 @@ Below is a minimal configuration example showing how to use this image with Sele
     "default": "142.0",
     "versions": {
       "142.0": {
-        "image": "lafisteri/images:142.0",
+        "image": "lafisteri/vnc_chrome:142.0",
         "port": "4444",
         "path": "/"
       }
@@ -60,7 +60,7 @@ Below is a minimal configuration example showing how to use this image with Sele
 
 ## 📊 Download Statistics
 
-### Chrome: [![Chrome Docker Pulls](https://img.shields.io/docker/pulls/lafisteri/images.svg)](https://hub.docker.com/r/lafisteri/images)
+### Chrome: [![Chrome Docker Pulls](https://img.shields.io/docker/pulls/lafisteri/vnc_chrome.svg)](https://hub.docker.com/r/lafisteri/vnc_chrome)
 
 ---
 

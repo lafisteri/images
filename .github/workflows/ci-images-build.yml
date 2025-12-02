@@ -79,5 +79,5 @@ jobs:
           ./images chrome \
             -b "${{ steps.versions.outputs.chrome_deb_version }}" \
             -d "${{ steps.versions.outputs.chromedriver_version }}" \
-            -t lafisteri/chrome:ci-test \
+            -t lafisteri/vnc_chrome:ci-test \
             vnc_chrome
