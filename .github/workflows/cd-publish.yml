@@ -49,7 +49,6 @@ jobs:
             exit 1
           fi
 
-          # Проверяем, что версия существует
           EXISTS=$(jq -e --arg v "$VERSION_KEY" 'has($v)' chrome-versions.json > /dev/null 2>&1 && echo "yes" || echo "no")
           if [ "$EXISTS" != "yes" ]; then
             echo "Version $VERSION_KEY not found in chrome-versions.json"
@@ -69,7 +68,6 @@ jobs:
           echo "Driver:    $CHROMEDRIVER_VERSION"
           echo "Status:    $STATUS"
 
-      # (опционально) не даём публиковать уже published
       - name: Fail if already published
         if: steps.read_json.outputs.status == 'published'
         run: |
@@ -96,12 +94,6 @@ jobs:
       - name: Push Docker image
         run: |
           docker push "${{ env.DOCKERHUB_REPOSITORY }}:${{ steps.vars.outputs.image_tag }}"
-
-      - name: Tag and push latest
-        run: |
-          docker tag "${{ env.DOCKERHUB_REPOSITORY }}:${{ steps.vars.outputs.image_tag }}" \
-                     "${{ env.DOCKERHUB_REPOSITORY }}:latest"
-          docker push "${{ env.DOCKERHUB_REPOSITORY }}:latest"
 
       - name: Update status to published in chrome-versions.json
         run: |
