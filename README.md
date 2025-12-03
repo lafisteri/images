@@ -33,7 +33,7 @@ The `./images` script automates the build and accepts the following arguments:
 ### Build example
 
 ```bash
-./images chrome -b 142.0.7444.61-1 -d 142.0.7444.61 -t my/chrome:142.0 vnc_chrome
+./images chrome -b 143.0.7499.40-1 -d 143.0.7499.40 -t my/chrome:143.0 vnc_chrome
 ```
 
 ---
@@ -46,10 +46,10 @@ Below is a minimal configuration example showing how to use this image with Sele
 ```json
 {
   "chrome": {
-    "default": "142.0",
+    "default": "143.0",
     "versions": {
-      "142.0": {
-        "image": "lafisteri/vnc_chrome:142.0",
+      "143.0": {
+        "image": "lafisteri/vnc_chrome:143.0",
         "port": "4444",
         "path": "/"
       }
