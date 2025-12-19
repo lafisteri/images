@@ -18,5 +18,10 @@
     "chrome_deb_version": "143.0.7499.146-1",
     "chromedriver_version": "143.0.7499.146",
     "status": "pending"
+  },
+  "143.0.7499.169": {
+    "chrome_deb_version": "143.0.7499.169-1",
+    "chromedriver_version": "143.0.7499.169",
+    "status": "pending"
   }
 }
