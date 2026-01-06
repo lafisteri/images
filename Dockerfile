@@ -70,8 +70,13 @@ LABEL chrome.version="${CHROME_VERSION}" \
 COPY --from=devtools-builder /out/devtools /usr/local/bin/devtools
 
 RUN useradd -m -s /bin/bash selenium && \
+    mkdir -p /home/selenium/.fluxbox && \
     chown -R selenium:selenium /home/selenium /etc/opt/chrome || true && \
     mkdir -p /var/log && touch /var/log/vnc-stack.log && chown selenium:selenium /var/log/vnc-stack.log
+
+COPY fluxbox/init /home/selenium/.fluxbox/init
+COPY fluxbox/apps /home/selenium/.fluxbox/apps
+RUN chown -R selenium:selenium /home/selenium/.fluxbox
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY scripts/xvfb-start.sh /usr/local/bin/xvfb-start

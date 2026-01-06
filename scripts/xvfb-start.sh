@@ -30,8 +30,11 @@ Xvfb :99 -screen 0 1920x1080x24 -ac +extension RANDR +render -noreset >>"$LOG_FI
 pids+=("$!")
 sleep 0.5
 
-echo "[VNC] starting fluxbox" >>"$LOG_FILE"
-fluxbox >>"$LOG_FILE" 2>&1 &
+export HOME=/home/selenium
+mkdir -p "$HOME/.fluxbox"
+
+echo "[VNC] starting fluxbox (rc=$HOME/.fluxbox/init)" >>"$LOG_FILE"
+fluxbox -rc "$HOME/.fluxbox/init" >>"$LOG_FILE" 2>&1 &
 pids+=("$!")
 
 echo "[VNC] starting x11vnc" >>"$LOG_FILE"
