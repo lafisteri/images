@@ -1,4 +1,4 @@
-name: Check latest Chrome & Chromedriver versions
+name: Check for last Chrome
 
 on:
   schedule:

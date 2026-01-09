@@ -1,4 +1,4 @@
-name: CD - Build & publish chrome image
+name: CD - Manual publish chrome image
 
 on:
   workflow_dispatch:
@@ -15,6 +15,10 @@ on:
 env:
   DOCKERHUB_REPOSITORY: lafisteri/vnc_chrome
 
+concurrency:
+  group: dockerhub-publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -28,10 +32,12 @@ jobs:
       - name: Resolve image tag
         id: vars
         run: |
+          set -euo pipefail
+
           VERSION_KEY="${{ inputs.version_key }}"
           IMAGE_TAG="${{ inputs.image_tag }}"
 
-          if [ -z "$IMAGE_TAG" ]; then
+          if [ -z "${IMAGE_TAG:-}" ]; then
             IMAGE_TAG="$VERSION_KEY"
           fi
 
@@ -41,7 +47,8 @@ jobs:
       - name: Read versions from chrome-versions.json
         id: read_json
         run: |
-          set -e
+          set -euo pipefail
+
           VERSION_KEY="${{ steps.vars.outputs.version_key }}"
 
           if [ ! -f chrome-versions.json ]; then
@@ -49,15 +56,15 @@ jobs:
             exit 1
           fi
 
-          EXISTS=$(jq -e --arg v "$VERSION_KEY" 'has($v)' chrome-versions.json > /dev/null 2>&1 && echo "yes" || echo "no")
+          EXISTS="$(jq -e --arg v "$VERSION_KEY" 'has($v)' chrome-versions.json >/dev/null 2>&1 && echo "yes" || echo "no")"
           if [ "$EXISTS" != "yes" ]; then
             echo "Version $VERSION_KEY not found in chrome-versions.json"
             exit 1
           fi
 
-          CHROME_DEB_VERSION=$(jq -r --arg v "$VERSION_KEY" '.[$v].chrome_deb_version' chrome-versions.json)
-          CHROMEDRIVER_VERSION=$(jq -r --arg v "$VERSION_KEY" '.[$v].chromedriver_version' chrome-versions.json)
-          STATUS=$(jq -r --arg v "$VERSION_KEY" '.[$v].status // "unknown"' chrome-versions.json)
+          CHROME_DEB_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chrome_deb_version' chrome-versions.json)"
+          CHROMEDRIVER_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chromedriver_version' chrome-versions.json)"
+          STATUS="$(jq -r --arg v "$VERSION_KEY" '.[$v].status // "unknown"' chrome-versions.json)"
 
           echo "chrome_deb_version=$CHROME_DEB_VERSION" >> "$GITHUB_OUTPUT"
           echo "chromedriver_version=$CHROMEDRIVER_VERSION" >> "$GITHUB_OUTPUT"
@@ -85,6 +92,8 @@ jobs:
 
       - name: Build image via ./images
         run: |
+          set -euo pipefail
+
           ./images chrome \
             -b "${{ steps.read_json.outputs.chrome_deb_version }}" \
             -d "${{ steps.read_json.outputs.chromedriver_version }}" \
@@ -93,23 +102,36 @@ jobs:
 
       - name: Push Docker image
         run: |
+          set -euo pipefail
           docker push "${{ env.DOCKERHUB_REPOSITORY }}:${{ steps.vars.outputs.image_tag }}"
 
       - name: Update status to published in chrome-versions.json
         run: |
-          set -e
-          VERSION_KEY="${{ steps.vars.outputs.version_key }}"
+          set -euo pipefail
 
-          UPDATED_JSON=$(jq \
+          VERSION_KEY="${{ steps.vars.outputs.version_key }}"
+          TAG="${{ steps.vars.outputs.image_tag }}"
+          TS="$(date -u +%FT%TZ)"
+
+          UPDATED_JSON="$(jq \
             --arg v "$VERSION_KEY" \
-            '.[$v].status = "published"' \
-            chrome-versions.json)
+            --arg repo "${DOCKERHUB_REPOSITORY}" \
+            --arg tag "$TAG" \
+            --arg ts "$TS" \
+            '.[$v].status="published"
+             | .[$v].published_at=$ts
+             | .[$v].image=($repo + ":" + $tag)
+             | .[$v].image_tag=$tag' \
+            chrome-versions.json)"
 
           echo "$UPDATED_JSON" > chrome-versions.json
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Подтянуть возможные изменения от авто-пайплайна, чтобы не словить non-fast-forward
+          git pull --rebase
+
           git add chrome-versions.json
-          git commit -m "chore: mark Chrome $VERSION_KEY as published"
+          git commit -m "chore: mark Chrome $VERSION_KEY as published" || echo "No changes to commit"
           git push
-          
