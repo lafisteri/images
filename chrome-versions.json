@@ -12,7 +12,10 @@
   "143.0.7499.42": {
     "chrome_deb_version": "143.0.7499.42-1",
     "chromedriver_version": "143.0.7499.42",
-    "status": "pending"
+    "status": "published",
+    "published_at": "2026-01-09T14:34:19Z",
+    "image": "lafisteri/vnc_chrome:143.0.7499.42",
+    "image_tag": "143.0.7499.42"
   },
   "143.0.7499.146": {
     "chrome_deb_version": "143.0.7499.146-1",
