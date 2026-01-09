@@ -16,20 +16,5 @@
     "published_at": "2026-01-09T14:34:19Z",
     "image": "lafisteri/vnc_chrome:143.0.7499.42",
     "image_tag": "143.0.7499.42"
-  },
-  "143.0.7499.146": {
-    "chrome_deb_version": "143.0.7499.146-1",
-    "chromedriver_version": "143.0.7499.146",
-    "status": "pending"
-  },
-  "143.0.7499.169": {
-    "chrome_deb_version": "143.0.7499.169-1",
-    "chromedriver_version": "143.0.7499.169",
-    "status": "pending"
-  },
-  "143.0.7499.192": {
-    "chrome_deb_version": "143.0.7499.192-1",
-    "chromedriver_version": "143.0.7499.192",
-    "status": "pending"
   }
 }
