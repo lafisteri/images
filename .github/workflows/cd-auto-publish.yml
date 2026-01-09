@@ -87,6 +87,12 @@ jobs:
           VERSION_KEY="${{ steps.pick.outputs.version_key }}"
           TS="$(date -u +%FT%TZ)"
 
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Pull first (clean working tree), then update json
+          git pull --rebase
+
           UPDATED_JSON="$(jq \
             --arg v "$VERSION_KEY" \
             --arg ts "$TS" \
@@ -97,9 +103,6 @@ jobs:
 
           echo "$UPDATED_JSON" > chrome-versions.json
 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase
           git add chrome-versions.json
           git commit -m "chore: attempt publish Chrome $VERSION_KEY" || echo "No changes to commit"
           git push
@@ -145,6 +148,12 @@ jobs:
           VERSION_KEY="${{ steps.pick.outputs.version_key }}"
           TS="$(date -u +%FT%TZ)"
 
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Pull first (clean working tree), then update json
+          git pull --rebase
+
           UPDATED_JSON="$(jq \
             --arg v "$VERSION_KEY" \
             --arg ts "$TS" \
@@ -158,9 +167,6 @@ jobs:
 
           echo "$UPDATED_JSON" > chrome-versions.json
 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase
           git add chrome-versions.json
           git commit -m "chore: publish Chrome $VERSION_KEY" || echo "No changes to commit"
           git push
@@ -176,6 +182,12 @@ jobs:
 
           ERR="build/push failed (see workflow logs)"
 
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Pull first (clean working tree), then update json
+          git pull --rebase
+
           UPDATED_JSON="$(jq \
             --arg v "$VERSION_KEY" \
             --arg ts "$TS" \
@@ -188,9 +200,6 @@ jobs:
 
           echo "$UPDATED_JSON" > chrome-versions.json
 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase
           git add chrome-versions.json
           git commit -m "chore: mark Chrome $VERSION_KEY as failed/blocked" || echo "No changes to commit"
           git push
