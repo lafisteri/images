@@ -74,11 +74,17 @@ jobs:
             --arg v "$VERSION_KEY" \
             --arg chrome "$CHROME_DEB_VERSION" \
             --arg driver "$CHROMEDRIVER_VERSION" \
-            '. + {($v): {chrome_deb_version: $chrome, chromedriver_version: $driver, status: "pending"}}' \
+            --arg ts "$(date -u +%FT%TZ)" \
+            '. + {($v): {
+                  chrome_deb_version: $chrome,
+                  chromedriver_version: $driver,
+                  status: "pending",
+                  attempts: 0,
+                  created_at: $ts
+                }}' \
             chrome-versions.json)
 
           echo "$UPDATED_JSON" > chrome-versions.json
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add chrome-versions.json

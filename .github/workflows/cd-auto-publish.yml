@@ -3,12 +3,13 @@ name: CD - Auto publish chrome image
 on:
   workflow_run:
     workflows:
-      - "Check for last Chrome"
+      - "Check for last Chrome" # must match the name of the upstream workflow
     types:
       - completed
 
 env:
   DOCKERHUB_REPOSITORY: lafisteri/vnc_chrome
+  MAX_ATTEMPTS: "5"
 
 concurrency:
   group: dockerhub-publish
@@ -25,7 +26,7 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Find latest version entry
+      - name: Pick newest pending/failed version under attempts limit
         id: pick
         run: |
           set -euo pipefail
@@ -35,50 +36,93 @@ jobs:
             exit 1
           fi
 
-          VERSION_KEY="$(jq -r 'keys | sort | last' chrome-versions.json)"
-          if [ -z "${VERSION_KEY:-}" ] || [ "$VERSION_KEY" = "null" ]; then
-            echo "No versions in chrome-versions.json"
+          MAX="${MAX_ATTEMPTS}"
+          VERSION_KEY="$(jq -r --argjson max "$MAX" '
+            to_entries
+            | map(select(
+                (.value.status=="pending" or .value.status=="failed")
+                and ((.value.attempts // 0) < $max)
+              ))
+            | sort_by(.key | split(".") | map(tonumber))
+            | (last | .key) // ""
+          ' chrome-versions.json)"
+
+          if [ -z "${VERSION_KEY:-}" ]; then
+            echo "No pending/failed versions to publish (or all exceeded attempts limit)."
+            echo "version_key=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           STATUS="$(jq -r --arg v "$VERSION_KEY" '.[$v].status // "unknown"' chrome-versions.json)"
           CHROME_DEB_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chrome_deb_version // empty' chrome-versions.json)"
           CHROMEDRIVER_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chromedriver_version // empty' chrome-versions.json)"
+          ATTEMPTS="$(jq -r --arg v "$VERSION_KEY" '(.[$v].attempts // 0) | tostring' chrome-versions.json)"
 
-          echo "Latest key: $VERSION_KEY, status: $STATUS"
+          echo "Picked key: $VERSION_KEY"
+          echo "status: $STATUS, attempts: $ATTEMPTS"
+          echo "chrome_deb_version: $CHROME_DEB_VERSION"
+          echo "chromedriver_version: $CHROMEDRIVER_VERSION"
+
+          if [ -z "${CHROME_DEB_VERSION:-}" ] || [ -z "${CHROMEDRIVER_VERSION:-}" ]; then
+            echo "Missing chrome_deb_version or chromedriver_version for $VERSION_KEY"
+            exit 1
+          fi
+
           echo "version_key=$VERSION_KEY" >> "$GITHUB_OUTPUT"
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "chrome_deb_version=$CHROME_DEB_VERSION" >> "$GITHUB_OUTPUT"
           echo "chromedriver_version=$CHROMEDRIVER_VERSION" >> "$GITHUB_OUTPUT"
+          echo "attempts=$ATTEMPTS" >> "$GITHUB_OUTPUT"
 
       - name: Stop if nothing to publish
-        if: ${{ steps.pick.outputs.version_key == '' || (steps.pick.outputs.status != 'pending' && steps.pick.outputs.status != 'failed') }}
+        if: ${{ steps.pick.outputs.version_key == '' }}
         run: |
-          echo "Nothing to publish. Latest status is not pending/failed."
+          echo "Nothing to publish."
+
+      - name: Mark as publishing + increment attempts
+        if: ${{ steps.pick.outputs.version_key != '' }}
+        run: |
+          set -euo pipefail
+
+          VERSION_KEY="${{ steps.pick.outputs.version_key }}"
+          TS="$(date -u +%FT%TZ)"
+
+          UPDATED_JSON="$(jq \
+            --arg v "$VERSION_KEY" \
+            --arg ts "$TS" \
+            '.[$v].attempts = ((.[$v].attempts // 0) + 1)
+             | .[$v].last_attempt_at = $ts
+             | .[$v].status = "publishing"' \
+            chrome-versions.json)"
+
+          echo "$UPDATED_JSON" > chrome-versions.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase
+          git add chrome-versions.json
+          git commit -m "chore: attempt publish Chrome $VERSION_KEY" || echo "No changes to commit"
+          git push
 
       - name: Login to Docker Hub
-        if: ${{ steps.pick.outputs.status == 'pending' || steps.pick.outputs.status == 'failed' }}
+        if: ${{ steps.pick.outputs.version_key != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Make images script executable
-        if: ${{ steps.pick.outputs.status == 'pending' || steps.pick.outputs.status == 'failed' }}
+        if: ${{ steps.pick.outputs.version_key != '' }}
         run: chmod +x ./images
 
       - name: Build image
-        if: ${{ steps.pick.outputs.status == 'pending' || steps.pick.outputs.status == 'failed' }}
+        if: ${{ steps.pick.outputs.version_key != '' }}
         run: |
           set -euo pipefail
+
           VERSION_KEY="${{ steps.pick.outputs.version_key }}"
           CHROME_DEB_VERSION="${{ steps.pick.outputs.chrome_deb_version }}"
           CHROMEDRIVER_VERSION="${{ steps.pick.outputs.chromedriver_version }}"
-
-          if [ -z "${CHROME_DEB_VERSION:-}" ] || [ -z "${CHROMEDRIVER_VERSION:-}" ]; then
-            echo "Missing chrome_deb_version or chromedriver_version in chrome-versions.json for $VERSION_KEY"
-            exit 1
-          fi
 
           ./images chrome \
             -b "$CHROME_DEB_VERSION" \
@@ -87,16 +131,17 @@ jobs:
             vnc_chrome
 
       - name: Push image
-        if: ${{ steps.pick.outputs.status == 'pending' || steps.pick.outputs.status == 'failed' }}
+        if: ${{ steps.pick.outputs.version_key != '' }}
         run: |
           set -euo pipefail
           VERSION_KEY="${{ steps.pick.outputs.version_key }}"
           docker push "${DOCKERHUB_REPOSITORY}:${VERSION_KEY}"
 
       - name: Mark as published
-        if: ${{ steps.pick.outputs.status == 'pending' || steps.pick.outputs.status == 'failed' }}
+        if: ${{ steps.pick.outputs.version_key != '' }}
         run: |
           set -euo pipefail
+
           VERSION_KEY="${{ steps.pick.outputs.version_key }}"
           TS="$(date -u +%FT%TZ)"
 
@@ -107,35 +152,45 @@ jobs:
             '.[$v].status="published"
              | .[$v].published_at=$ts
              | .[$v].image=($repo + ":" + $v)
-             | .[$v].image_tag=$v' \
+             | .[$v].image_tag=$v
+             | del(.[$v].last_error)' \
             chrome-versions.json)"
 
           echo "$UPDATED_JSON" > chrome-versions.json
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase
           git add chrome-versions.json
-          git commit -m "chore: publish Chrome $VERSION_KEY" || exit 0
+          git commit -m "chore: publish Chrome $VERSION_KEY" || echo "No changes to commit"
           git push
 
-      - name: Mark as failed (if build/push failed)
-        if: ${{ failure() && (steps.pick.outputs.status == 'pending' || steps.pick.outputs.status == 'failed') }}
+      - name: Mark as failed/blocked (on error)
+        if: ${{ failure() && steps.pick.outputs.version_key != '' }}
         run: |
           set -euo pipefail
+
           VERSION_KEY="${{ steps.pick.outputs.version_key }}"
           TS="$(date -u +%FT%TZ)"
+          MAX="${MAX_ATTEMPTS}"
+
+          ERR="build/push failed (see workflow logs)"
 
           UPDATED_JSON="$(jq \
             --arg v "$VERSION_KEY" \
             --arg ts "$TS" \
-            '.[$v].status="failed"
-             | .[$v].failed_at=$ts' \
+            --arg err "$ERR" \
+            --argjson max "$MAX" \
+            '.[$v].last_failed_at=$ts
+             | .[$v].last_error=$err
+             | .[$v].status = (if ((.[$v].attempts // 0) >= $max) then "blocked" else "failed" end)' \
             chrome-versions.json)"
 
           echo "$UPDATED_JSON" > chrome-versions.json
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase
           git add chrome-versions.json
-          git commit -m "chore: mark Chrome $VERSION_KEY as failed" || exit 0
+          git commit -m "chore: mark Chrome $VERSION_KEY as failed/blocked" || echo "No changes to commit"
           git push
