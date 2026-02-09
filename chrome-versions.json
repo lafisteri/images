@@ -73,11 +73,11 @@
   "145.0.7632.46": {
     "chrome_deb_version": "145.0.7632.46-1",
     "chromedriver_version": "145.0.7632.46",
-    "status": "publishing",
+    "status": "blocked",
     "attempts": 5,
     "created_at": "2026-02-05T06:56:17Z",
     "last_attempt_at": "2026-02-09T07:02:00Z",
-    "last_failed_at": "2026-02-08T06:47:07Z",
+    "last_failed_at": "2026-02-09T07:02:46Z",
     "last_error": "build/push failed (see workflow logs)"
   }
 }
