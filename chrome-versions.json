@@ -105,8 +105,9 @@
   "145.0.7632.77": {
     "chrome_deb_version": "145.0.7632.77-1",
     "chromedriver_version": "145.0.7632.77",
-    "status": "pending",
-    "attempts": 0,
-    "created_at": "2026-02-19T06:57:19Z"
+    "status": "publishing",
+    "attempts": 1,
+    "created_at": "2026-02-19T06:57:19Z",
+    "last_attempt_at": "2026-02-19T06:57:30Z"
   }
 }
