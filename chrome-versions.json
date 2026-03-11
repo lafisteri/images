@@ -143,5 +143,12 @@
     "last_attempt_at": "2026-03-10T06:44:54Z",
     "last_failed_at": "2026-03-10T06:46:07Z",
     "last_error": "build/push failed (see workflow logs)"
+  },
+  "146.0.7680.72": {
+    "chrome_deb_version": "146.0.7680.72-1",
+    "chromedriver_version": "146.0.7680.72",
+    "status": "pending",
+    "attempts": 0,
+    "created_at": "2026-03-11T06:50:37Z"
   }
 }
