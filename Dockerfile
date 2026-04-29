@@ -108,8 +108,7 @@ RUN useradd -m -s /bin/bash selenium && \
 COPY fluxbox/init /home/selenium/.fluxbox/init
 COPY fluxbox/apps /home/selenium/.fluxbox/apps
 COPY chrome/policies.json /etc/opt/chrome/policies/managed/policies.json
-RUN chown -R selenium:selenium /home/selenium/.fluxbox
-RUN chown -R selenium:selenium /etc/opt/chrome/policies/managed
+RUN chown -R selenium:selenium /home/selenium/.fluxbox /etc/opt/chrome/policies/managed
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY scripts/xvfb-start.sh /usr/local/bin/xvfb-start
