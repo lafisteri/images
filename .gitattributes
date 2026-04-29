@@ -1,0 +1,4 @@
+*.sh text eol=lf
+Dockerfile text eol=lf
+images text eol=lf
+fluxbox/* text eol=lf

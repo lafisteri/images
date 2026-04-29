@@ -165,7 +165,12 @@ func detectDevtoolsHost(baseDir string) string {
 	if pd, ok := os.LookupEnv("BROWSER_PROFILE_DIR"); ok {
 		candidates = append(candidates, pd)
 	} else {
-		for _, glob := range []string{".com.google.Chrome*", ".org.chromium.Chromium*"} {
+		for _, glob := range []string{
+			".com.google.Chrome*",
+			".org.chromium.Chromium*",
+			"com.google.Chrome*",
+			"org.chromium.Chromium*",
+		} {
 			if cds, err := filepath.Glob(filepath.Join(baseDir, glob)); err == nil {
 				candidates = append(candidates, cds...)
 			}
