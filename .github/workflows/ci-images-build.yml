@@ -25,44 +25,52 @@ jobs:
         with:
           dockerfile: Dockerfile
 
-      - name: Read latest Chrome version from chrome-versions.json
+      - name: Read latest buildable Chrome version from chrome-versions.json
         id: versions
         run: |
-          set -e
+          set -euo pipefail
 
           if [ ! -f chrome-versions.json ]; then
-            echo "❌ ERROR: chrome-versions.json not found."
+            echo "ERROR: chrome-versions.json not found."
             exit 1
           fi
 
           if [ ! -s chrome-versions.json ]; then
-            echo "❌ ERROR: chrome-versions.json is empty."
+            echo "ERROR: chrome-versions.json is empty."
             exit 1
           fi
 
-          echo "Reading latest Chrome version from chrome-versions.json..."
+          echo "Reading latest buildable Chrome version from chrome-versions.json..."
 
-          VERSION_KEY=$(jq -r 'keys | .[-1]' chrome-versions.json)
+          VERSION_KEY="$(jq -r '
+            to_entries
+            | map(select(.value.status == "pending" or .value.status == "published"))
+            | sort_by(.key | split(".") | map(tonumber))
+            | (last | .key) // empty
+          ' chrome-versions.json)"
 
-          if [ "$VERSION_KEY" = "null" ] || [ -z "$VERSION_KEY" ]; then
-            echo "❌ ERROR: No version keys found."
+          if [ -z "$VERSION_KEY" ] || [ "$VERSION_KEY" = "null" ]; then
+            echo "ERROR: No pending or published version keys found."
             exit 1
           fi
 
-          CHROME_DEB_VERSION=$(jq -r --arg v "$VERSION_KEY" '.[$v].chrome_deb_version' chrome-versions.json)
-          CHROMEDRIVER_VERSION=$(jq -r --arg v "$VERSION_KEY" '.[$v].chromedriver_version' chrome-versions.json)
+          STATUS="$(jq -r --arg v "$VERSION_KEY" '.[$v].status // "unknown"' chrome-versions.json)"
+          CHROME_DEB_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chrome_deb_version // empty' chrome-versions.json)"
+          CHROMEDRIVER_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chromedriver_version // empty' chrome-versions.json)"
 
           if [ -z "$CHROME_DEB_VERSION" ] || [ "$CHROME_DEB_VERSION" = "null" ]; then
-            echo "❌ ERROR: chrome_deb_version missing."
-            exit 1
-          fi
-          if [ -z "$CHROMEDRIVER_VERSION" ] || [ "$CHROMEDRIVER_VERSION" = "null" ]; then
-            echo "❌ ERROR: chromedriver_version missing."
+            echo "ERROR: chrome_deb_version missing."
             exit 1
           fi
 
-          echo "✔ Using version:"
+          if [ -z "$CHROMEDRIVER_VERSION" ] || [ "$CHROMEDRIVER_VERSION" = "null" ]; then
+            echo "ERROR: chromedriver_version missing."
+            exit 1
+          fi
+
+          echo "Using version:"
           echo "  version_key:          $VERSION_KEY"
+          echo "  status:               $STATUS"
           echo "  chrome_deb_version:   $CHROME_DEB_VERSION"
           echo "  chromedriver_version: $CHROMEDRIVER_VERSION"
 
@@ -75,7 +83,7 @@ jobs:
 
       - name: Build Chrome VNC image via ./images
         run: |
-          echo "🚀 Building Docker image for Chrome ${{ steps.versions.outputs.version_key }}"
+          echo "Building Docker image for Chrome ${{ steps.versions.outputs.version_key }}"
           ./images chrome \
             -b "${{ steps.versions.outputs.chrome_deb_version }}" \
             -d "${{ steps.versions.outputs.chromedriver_version }}" \
