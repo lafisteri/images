@@ -15,7 +15,7 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Get latest Linux Chrome APT version
+      - name: Resolve latest Linux Chrome and matching Chromedriver
         id: latest
         run: |
           set -euo pipefail
@@ -31,14 +31,90 @@ jobs:
           sudo apt-get update
 
           CHROME_DEB_VERSION="$(apt-cache madison google-chrome-stable | awk '{print $3}' | sort -V | tail -n1)"
-
           if [ -z "${CHROME_DEB_VERSION:-}" ] || [ "$CHROME_DEB_VERSION" = "null" ]; then
             echo "Failed to fetch latest google-chrome-stable APT version"
             exit 1
           fi
 
           VERSION_KEY="${CHROME_DEB_VERSION%-*}"
-          CHROMEDRIVER_VERSION="$VERSION_KEY"
+          CHROME_BUILD="$(echo "${VERSION_KEY}" | cut -d. -f1-3)"
+          CHROME_MILESTONE="${VERSION_KEY%%.*}"
+
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "${TMP_DIR}"' EXIT
+
+          curl -fsSL https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json -o "${TMP_DIR}/versions.json"
+          curl -fsSL https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json -o "${TMP_DIR}/builds.json"
+          curl -fsSL https://googlechromelabs.github.io/chrome-for-testing/latest-versions-per-milestone-with-downloads.json -o "${TMP_DIR}/milestones.json"
+
+          lookup_exact_version() {
+            local version="${1}"
+            local resolved_url
+
+            resolved_url="$(
+              jq -r --arg v "${version}" '
+                .versions[] | select(.version==$v) | .downloads.chromedriver[]? | select(.platform=="linux64") | .url
+              ' "${TMP_DIR}/versions.json"
+            )"
+
+            if [ -n "${resolved_url}" ] && [ "${resolved_url}" != "null" ]; then
+              printf '%s\n' "${version}"
+              return 0
+            fi
+
+            return 1
+          }
+
+          lookup_build_version() {
+            local build="${1}"
+            local resolved_version
+            local resolved_url
+
+            resolved_version="$(jq -r --arg b "${build}" '.builds[$b].version // empty' "${TMP_DIR}/builds.json")"
+            resolved_url="$(
+              jq -r --arg b "${build}" '
+                .builds[$b].downloads.chromedriver[]? | select(.platform=="linux64") | .url
+              ' "${TMP_DIR}/builds.json"
+            )"
+
+            if [ -n "${resolved_version}" ] && [ -n "${resolved_url}" ] && [ "${resolved_url}" != "null" ]; then
+              printf '%s\n' "${resolved_version}"
+              return 0
+            fi
+
+            return 1
+          }
+
+          lookup_milestone_version() {
+            local milestone="${1}"
+            local resolved_version
+            local resolved_url
+
+            resolved_version="$(jq -r --arg m "${milestone}" '.milestones[$m].version // empty' "${TMP_DIR}/milestones.json")"
+            resolved_url="$(
+              jq -r --arg m "${milestone}" '
+                .milestones[$m].downloads.chromedriver[]? | select(.platform=="linux64") | .url
+              ' "${TMP_DIR}/milestones.json"
+            )"
+
+            if [ -n "${resolved_version}" ] && [ -n "${resolved_url}" ] && [ "${resolved_url}" != "null" ]; then
+              printf '%s\n' "${resolved_version}"
+              return 0
+            fi
+
+            return 1
+          }
+
+          if CHROMEDRIVER_VERSION="$(lookup_exact_version "${VERSION_KEY}")"; then
+            echo "Found exact Chromedriver match for ${VERSION_KEY}"
+          elif CHROMEDRIVER_VERSION="$(lookup_build_version "${CHROME_BUILD}")"; then
+            echo "No exact Chromedriver for ${VERSION_KEY}; using build-compatible ${CHROMEDRIVER_VERSION}"
+          elif CHROMEDRIVER_VERSION="$(lookup_milestone_version "${CHROME_MILESTONE}")"; then
+            echo "No build-compatible Chromedriver for ${VERSION_KEY}; using milestone ${CHROMEDRIVER_VERSION}"
+          else
+            echo "Failed to resolve a compatible Chromedriver for ${VERSION_KEY}"
+            exit 1
+          fi
 
           echo "Latest Linux Chrome APT version: $VERSION_KEY"
           echo "chrome_deb_version:   $CHROME_DEB_VERSION"
@@ -54,49 +130,70 @@ jobs:
             echo "{}" > chrome-versions.json
           fi
 
-      - name: Check if version already in chrome-versions.json
-        id: check_present
+      - name: Check if chrome-versions.json needs sync
+        id: check_sync
         run: |
           set -euo pipefail
-          VERSION_KEY="${{ steps.latest.outputs.version_key }}"
 
-          EXISTS="$(jq -e --arg v "$VERSION_KEY" 'has($v)' chrome-versions.json >/dev/null 2>&1 && echo "yes" || echo "no")"
-
-          echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
-          echo "Version $VERSION_KEY present? $EXISTS"
-
-      - name: Add new pending version to chrome-versions.json
-        if: steps.check_present.outputs.exists == 'no'
-        run: |
-          set -euo pipefail
           VERSION_KEY="${{ steps.latest.outputs.version_key }}"
           CHROME_DEB_VERSION="${{ steps.latest.outputs.chrome_deb_version }}"
           CHROMEDRIVER_VERSION="${{ steps.latest.outputs.chromedriver_version }}"
 
-          echo "Adding new version $VERSION_KEY to chrome-versions.json"
+          EXISTS="$(jq -e --arg v "$VERSION_KEY" 'has($v)' chrome-versions.json >/dev/null 2>&1 && echo "yes" || echo "no")"
+          CURRENT_CHROME_DEB_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chrome_deb_version // empty' chrome-versions.json)"
+          CURRENT_CHROMEDRIVER_VERSION="$(jq -r --arg v "$VERSION_KEY" '.[$v].chromedriver_version // empty' chrome-versions.json)"
+
+          NEEDS_SYNC="no"
+          if [ "$EXISTS" = "no" ]; then
+            NEEDS_SYNC="yes"
+          elif [ "$CURRENT_CHROME_DEB_VERSION" != "$CHROME_DEB_VERSION" ] || [ "$CURRENT_CHROMEDRIVER_VERSION" != "$CHROMEDRIVER_VERSION" ]; then
+            NEEDS_SYNC="yes"
+          fi
+
+          echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
+          echo "needs_sync=$NEEDS_SYNC" >> "$GITHUB_OUTPUT"
+          echo "Version $VERSION_KEY present? $EXISTS"
+          echo "Version $VERSION_KEY needs sync? $NEEDS_SYNC"
+
+      - name: Upsert resolved version in chrome-versions.json
+        if: steps.check_sync.outputs.needs_sync == 'yes'
+        run: |
+          set -euo pipefail
+
+          VERSION_KEY="${{ steps.latest.outputs.version_key }}"
+          CHROME_DEB_VERSION="${{ steps.latest.outputs.chrome_deb_version }}"
+          CHROMEDRIVER_VERSION="${{ steps.latest.outputs.chromedriver_version }}"
+          TIMESTAMP="$(date -u +%FT%TZ)"
+
+          echo "Syncing version $VERSION_KEY in chrome-versions.json"
 
           UPDATED_JSON="$(jq \
             --arg v "$VERSION_KEY" \
             --arg chrome "$CHROME_DEB_VERSION" \
             --arg driver "$CHROMEDRIVER_VERSION" \
-            --arg ts "$(date -u +%FT%TZ)" \
-            '. + {($v): {
-                  chrome_deb_version: $chrome,
-                  chromedriver_version: $driver,
-                  status: "pending",
-                  attempts: 0,
-                  created_at: $ts
-                }}' \
+            --arg ts "$TIMESTAMP" \
+            'if has($v) then
+               .[$v].chrome_deb_version = $chrome
+               | .[$v].chromedriver_version = $driver
+             else
+               . + {($v): {
+                 chrome_deb_version: $chrome,
+                 chromedriver_version: $driver,
+                 status: "pending",
+                 attempts: 0,
+                 created_at: $ts
+               }}
+             end' \
             chrome-versions.json)"
 
           echo "$UPDATED_JSON" > chrome-versions.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add chrome-versions.json
-          git commit -m "chore: add Chrome $VERSION_KEY (pending)"
+          git commit -m "chore: sync Chrome $VERSION_KEY metadata"
           git push
 
       - name: Nothing to update
-        if: steps.check_present.outputs.exists == 'yes'
+        if: steps.check_sync.outputs.needs_sync == 'no'
         run: |
-          echo "Version already exists in chrome-versions.json, nothing to do."
+          echo "chrome-versions.json already contains the resolved Chrome and Chromedriver versions."
