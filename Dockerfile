@@ -63,8 +63,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CHROME_BIN=/usr/bin/google-chrome \
     CHROMEDRIVER=/usr/bin/chromedriver \
     DBUS_SESSION_BUS_ADDRESS=/dev/null \
-    ENABLE_VNC="${ENABLE_VNC}" \
-    VNC_PASSWORD=selenoid
+    ENABLE_VNC="${ENABLE_VNC}"
 
 RUN set -eux; \
     apt-get update; \

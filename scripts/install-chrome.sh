@@ -16,6 +16,7 @@ configure_chrome_install() {
     [[ -f "${launcher}" ]] || continue
 
     if ! grep -q -- '--no-sandbox' "${launcher}"; then
+      # shellcheck disable=SC2016
       sed -i 's@exec -a "$0" "$HERE/chrome"@& --no-sandbox --disable-gpu --disable-dev-shm-usage@' "${launcher}"
     fi
   done
