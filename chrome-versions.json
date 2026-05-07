@@ -266,8 +266,9 @@
   "148.0.7778.96": {
     "chrome_deb_version": "148.0.7778.96-1",
     "chromedriver_version": "148.0.7778.96",
-    "status": "pending",
-    "attempts": 0,
-    "created_at": "2026-05-07T08:29:59Z"
+    "status": "publishing",
+    "attempts": 1,
+    "created_at": "2026-05-07T08:29:59Z",
+    "last_attempt_at": "2026-05-07T08:30:17Z"
   }
 }
