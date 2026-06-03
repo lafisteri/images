@@ -310,8 +310,9 @@
   "149.0.7827.53": {
     "chrome_deb_version": "149.0.7827.53-1",
     "chromedriver_version": "149.0.7827.53",
-    "status": "pending",
-    "attempts": 0,
-    "created_at": "2026-06-03T10:53:56Z"
+    "status": "publishing",
+    "attempts": 1,
+    "created_at": "2026-06-03T10:53:56Z",
+    "last_attempt_at": "2026-06-03T10:54:08Z"
   }
 }
