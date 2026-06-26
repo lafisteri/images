@@ -365,8 +365,9 @@
   "149.0.7827.200": {
     "chrome_deb_version": "149.0.7827.200-1",
     "chromedriver_version": "149.0.7827.155",
-    "status": "pending",
-    "attempts": 0,
-    "created_at": "2026-06-26T09:20:33Z"
+    "status": "publishing",
+    "attempts": 1,
+    "created_at": "2026-06-26T09:20:33Z",
+    "last_attempt_at": "2026-06-26T09:20:45Z"
   }
 }
