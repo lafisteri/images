@@ -365,9 +365,12 @@
   "149.0.7827.200": {
     "chrome_deb_version": "149.0.7827.200-1",
     "chromedriver_version": "149.0.7827.155",
-    "status": "publishing",
+    "status": "published",
     "attempts": 1,
     "created_at": "2026-06-26T09:20:33Z",
-    "last_attempt_at": "2026-06-26T09:20:45Z"
+    "last_attempt_at": "2026-06-26T09:20:45Z",
+    "published_at": "2026-06-26T09:22:41Z",
+    "image": "lafisteri/vnc_chrome:149.0.7827.200",
+    "image_tag": "149.0.7827.200"
   }
 }
