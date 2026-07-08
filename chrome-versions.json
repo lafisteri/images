@@ -387,9 +387,12 @@
   "150.0.7871.100": {
     "chrome_deb_version": "150.0.7871.100-1",
     "chromedriver_version": "150.0.7871.49",
-    "status": "publishing",
+    "status": "published",
     "attempts": 1,
     "created_at": "2026-07-08T08:23:18Z",
-    "last_attempt_at": "2026-07-08T08:23:34Z"
+    "last_attempt_at": "2026-07-08T08:23:34Z",
+    "published_at": "2026-07-08T08:25:16Z",
+    "image": "lafisteri/vnc_chrome:150.0.7871.100",
+    "image_tag": "150.0.7871.100"
   }
 }
