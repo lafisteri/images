@@ -5,7 +5,7 @@ ARG ENABLE_VNC=0
 ARG LOCALE="en_US.UTF-8"
 ARG TZ="UTC"
 
-FROM golang:1.22-bullseye AS devtools-builder
+FROM golang:1.22-bookworm AS devtools-builder
 
 WORKDIR /src/devtools
 
@@ -20,7 +20,7 @@ RUN go mod tidy -e && \
     go mod verify && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/devtools
 
-FROM golang:1.22-bullseye AS fileserver-builder
+FROM golang:1.22-bookworm AS fileserver-builder
 
 WORKDIR /src/fileserver
 
@@ -32,7 +32,7 @@ ENV GOPROXY=https://proxy.golang.org,direct \
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/fileserver
 
-FROM golang:1.22-bullseye AS xseld-builder
+FROM golang:1.22-bookworm AS xseld-builder
 
 WORKDIR /src/xseld
 
@@ -44,7 +44,7 @@ ENV GOPROXY=https://proxy.golang.org,direct \
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/xseld
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 ARG CHROME_VERSION
 ARG CHROME_APT_PATTERN=""
