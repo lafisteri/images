@@ -552,11 +552,13 @@
   "153.0.8010.36": {
     "chrome_deb_version": "153.0.8010.36-1",
     "chromedriver_version": "153.0.8010.36",
-    "status": "publishing",
+    "status": "published",
     "attempts": 4,
     "created_at": "2026-09-09T10:44:08Z",
     "last_attempt_at": "2026-09-11T19:40:00Z",
     "last_failed_at": "2026-09-11T10:34:55Z",
-    "last_error": "build/push failed (see workflow logs)"
+    "published_at": "2026-09-11T19:42:00Z",
+    "image": "lafisteri/vnc_chrome:153.0.8010.36",
+    "image_tag": "153.0.8010.36"
   }
 }
