@@ -608,8 +608,9 @@
   "154.0.8037.97": {
     "chrome_deb_version": "154.0.8037.97-1",
     "chromedriver_version": "154.0.8037.92",
-    "status": "pending",
-    "attempts": 0,
-    "created_at": "2026-10-02T11:51:04Z"
+    "status": "publishing",
+    "attempts": 1,
+    "created_at": "2026-10-02T11:51:04Z",
+    "last_attempt_at": "2026-10-02T11:51:15Z"
   }
 }
