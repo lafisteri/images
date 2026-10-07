@@ -615,5 +615,12 @@
     "published_at": "2026-10-02T11:53:43Z",
     "image": "lafisteri/vnc_chrome:154.0.8037.97",
     "image_tag": "154.0.8037.97"
+  },
+  "155.0.8059.39": {
+    "chrome_deb_version": "155.0.8059.39-1",
+    "chromedriver_version": "155.0.8059.39",
+    "status": "pending",
+    "attempts": 0,
+    "created_at": "2026-10-07T12:37:13Z"
   }
 }
