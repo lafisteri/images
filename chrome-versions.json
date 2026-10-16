@@ -641,9 +641,12 @@
   "155.0.8059.84": {
     "chrome_deb_version": "155.0.8059.84-1",
     "chromedriver_version": "155.0.8059.84",
-    "status": "publishing",
+    "status": "published",
     "attempts": 1,
     "created_at": "2026-10-16T10:39:37Z",
-    "last_attempt_at": "2026-10-16T10:39:47Z"
+    "last_attempt_at": "2026-10-16T10:39:47Z",
+    "published_at": "2026-10-16T10:41:46Z",
+    "image": "lafisteri/vnc_chrome:155.0.8059.84",
+    "image_tag": "155.0.8059.84"
   }
 }
