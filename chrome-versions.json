@@ -696,8 +696,9 @@
   "157.0.8103.50": {
     "chrome_deb_version": "157.0.8103.50-1",
     "chromedriver_version": "157.0.8103.50",
-    "status": "pending",
-    "attempts": 0,
-    "created_at": "2026-11-10T14:17:42Z"
+    "status": "publishing",
+    "attempts": 1,
+    "created_at": "2026-11-10T14:17:42Z",
+    "last_attempt_at": "2026-11-10T14:17:56Z"
   }
 }
